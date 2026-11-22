@@ -161,20 +161,20 @@ export default function App() {
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <div className="max-w-3xl">
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-300 text-xs font-semibold mb-6 uppercase tracking-widest shadow-[0_0_15px_rgba(147,51,234,0.3)]">
-                    <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" /> Digital Commerce & Urban Culture
+                    <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" /> Independent Trade • Urban Culture • Community
                   </div>
                   <h1 className="text-5xl sm:text-7xl font-black tracking-tight text-white mb-6 uppercase leading-none">
-                    Find Your Style. <br />
+                    Find Your Scene. <br />
                     <span className="bg-gradient-to-r from-purple-400 via-indigo-400 to-pink-500 bg-clip-text text-transparent">
                       Find Your People.
                     </span>
                   </h1>
                   <p className="text-lg sm:text-xl text-gray-400 mb-10 leading-relaxed">
-                    Discover independent stores, streetwear drops, nightlife culture, and digital communities in one connected platform.
+                    Explore independent shops, original projects, community conversations, creative culture and city events — connected in one place.
                   </p>
                   <div className="flex flex-wrap gap-4">
                     <button onClick={() => setActiveTab('marketplace')} className="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-[0_0_25px_rgba(147,51,234,0.5)] transition flex items-center gap-2 group">
-                      Explore Marketplace <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition" />
+                      Enter Marketplace <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition" />
                     </button>
                     <button onClick={() => setActiveTab('stores')} className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border border-white/10 transition">
                       Discover Independent Stores
@@ -188,7 +188,7 @@ export default function App() {
               <div className="flex justify-between items-end mb-10">
                 <div>
                   <h2 className="text-3xl font-black tracking-tight text-white uppercase">Featured Stores</h2>
-                  <p className="text-gray-400 text-sm mt-1">Verified boutique brands with distinct urban identities.</p>
+                  <p className="text-gray-400 text-sm mt-1">Independent shops, makers and original projects with their own character.</p>
                 </div>
                 <button onClick={() => setActiveTab('stores')} className="text-purple-400 hover:text-purple-300 font-semibold text-sm flex items-center gap-1">
                   View All Stores <ChevronRight className="w-4 h-4" />
@@ -216,6 +216,31 @@ export default function App() {
                       <span className="text-purple-300 font-semibold">{store.items} items</span>
                     </div>
                   </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+              <div className="flex items-end justify-between mb-7">
+                <div>
+                  <span className="text-xs uppercase tracking-[.25em] text-amber-300/80 font-bold">Explore the ecosystem</span>
+                  <h2 className="text-3xl sm:text-4xl font-black text-white uppercase mt-2">More than a marketplace</h2>
+                  <p className="text-sm text-gray-400 mt-2">Different parts of STAFF, connected by one community.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {[
+                  {id:'community',name:'Community',desc:'People, posts and creative discoveries',mark:'01'},
+                  {id:'forum',name:'Forum',desc:'Ideas, questions and real conversations',mark:'02'},
+                  {id:'magazine',name:'Magazine',desc:'Stories, style and independent culture',mark:'03'},
+                  {id:'music',name:'Music',desc:'Sounds, artists and underground scenes',mark:'04'},
+                  {id:'events',name:'Events',desc:'Meetups, markets and city nights',mark:'05'}
+                ].map((item) => (
+                  <button key={item.id} onClick={() => setActiveTab(item.id)} className="text-left p-5 min-h-44 rounded-2xl bg-[#171a15] border border-[#55583b]/50 hover:border-[#aaa16a] hover:bg-[#202319] transition group">
+                    <span className="text-xs tracking-[.2em] text-[#aaa16a] font-bold">{item.mark} / STAFF</span>
+                    <h3 className="text-2xl font-black text-white uppercase mt-6 group-hover:text-[#d0c99a]">{item.name}</h3>
+                    <p className="text-xs text-gray-400 mt-2 leading-relaxed">{item.desc}</p>
+                  </button>
                 ))}
               </div>
             </section>
@@ -335,7 +360,7 @@ export default function App() {
         {['magazine', 'music', 'events', 'about'].includes(activeTab) && (
           <div className="max-w-4xl mx-auto px-4 py-24 text-center">
             <h1 className="text-4xl font-black text-white uppercase mb-4">{activeTab.toUpperCase()} SECTION</h1>
-            <p className="text-gray-400 mb-8">This section is fully routed and configured for your production Supabase database.</p>
+            <p className="text-gray-400 mb-8">This STAFF area is part of the ecosystem. Its content and server-side features are being connected in stages.</p>
             <button onClick={() => setActiveTab('home')} className="px-6 py-3 bg-purple-600 text-white font-bold rounded-xl">
               Return to Homepage
             </button>
@@ -401,7 +426,7 @@ export default function App() {
             <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center font-black text-white">ST</div>
             <span className="font-bold tracking-widest text-white">STAFF ECOSYSTEM</span>
           </div>
-          <p className="text-xs text-gray-500">© 2026 STAFF Platform. DISCOVER. CONNECT. EXPRESS. MORE THAN A MARKETPLACE. A CULTURE IN MOTION.</p>
+          <p className="text-xs text-gray-500">© 2026 STAFF. DISCOVER • CONNECT • CREATE • TRADE. MORE THAN A MARKETPLACE.</p>
         </div>
       </footer>
     </div>

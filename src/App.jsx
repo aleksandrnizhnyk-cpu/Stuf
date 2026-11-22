@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
 import StaffAuth from './components/StaffAuth';
+import EditorialSections from './components/EditorialSections';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -357,13 +358,7 @@ export default function App() {
         )}
 
         {['magazine', 'music', 'events', 'about'].includes(activeTab) && (
-          <div className="max-w-4xl mx-auto px-4 py-24 text-center">
-            <h1 className="text-4xl font-black text-white uppercase mb-4">{activeTab.toUpperCase()} SECTION</h1>
-            <p className="text-gray-400 mb-8">This STAFF area is part of the ecosystem. Its content and server-side features are being connected in stages.</p>
-            <button onClick={() => setActiveTab('home')} className="px-6 py-3 bg-purple-600 text-white font-bold rounded-xl">
-              Return to Homepage
-            </button>
-          </div>
+          <EditorialSections activeTab={activeTab} onNavigate={setActiveTab} />
         )}
       </main>
 

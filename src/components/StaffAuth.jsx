@@ -11,6 +11,19 @@ function authError(error, fallback) {
   return message || fallback;
 }
 
+async function ensureProfile(db, user) {
+  if (!user) return;
+  const { data: existing, error: lookupError } = await db.from('profiles').select('user_id').eq('user_id', user.id).maybeSingle();
+  if (lookupError) throw lookupError;
+  if (existing) return;
+  const candidate = user.user_metadata?.username || user.email?.split('@')[0] || `member_${user.id.slice(0, 8)}`;
+  const username = String(candidate).replace(/[^A-Za-z0-9_]/g, '').slice(0, 24);
+  if (username.length < 3) throw new Error('Не удалось создать профиль: проверь никнейм.');
+  const { error } = await db.from('profiles').insert({ user_id: user.id, username });
+  if (error?.code === '23505') throw new Error('Этот никнейм уже занят. Выбери другой.');
+  if (error) throw error;
+}
+
 export default function StaffAuth() {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState('signin');
@@ -26,13 +39,21 @@ export default function StaffAuth() {
     if (!db) return;
     db.auth.getSession().then(({ data }) => {
       const user = data.session?.user;
-      if (user) setAccountName(user.user_metadata?.username || user.email?.split('@')[0] || 'STAFF member');
+      if (user) {
+        setAccountName(user.user_metadata?.username || user.email?.split('@')[0] || 'STAFF member');
+        ensureProfile(db, user).catch(error => console.warn('STAFF profile sync:', error.message));
+      }
     });
     const { data } = db.auth.onAuthStateChange((_event, session) => {
       const user = session?.user;
       setAccountName(user ? (user.user_metadata?.username || user.email?.split('@')[0] || 'STAFF member') : '');
     });
-    return () => data.subscription.unsubscribe();
+    const openAuth = () => { setMode('signin'); setNotice(''); setOpen(true); };
+    window.addEventListener('staff:open-auth', openAuth);
+    return () => {
+      data.subscription.unsubscribe();
+      window.removeEventListener('staff:open-auth', openAuth);
+    };
   }, []);
 
   async function submit(event) {
@@ -45,6 +66,9 @@ export default function StaffAuth() {
       if (mode === 'signup') {
         const name = nickname.trim();
         if (!/^[A-Za-z0-9_]{3,24}$/.test(name)) throw new Error('Никнейм: 3–24 символа, латинские буквы, цифры или _.');
+        const { data: existingName, error: nameCheckError } = await db.from('profiles').select('user_id').ilike('username', name).maybeSingle();
+        if (nameCheckError) throw nameCheckError;
+        if (existingName) throw new Error('Этот никнейм уже занят. Выбери другой.');
         const { data, error } = await db.auth.signUp({
           email: email.trim(),
           password,
@@ -52,6 +76,7 @@ export default function StaffAuth() {
         });
         if (error) throw error;
         if (data.session) {
+          await ensureProfile(db, data.user);
           setOpen(false);
           setNotice('Аккаунт STAFF создан. Ты вошёл в систему.');
         } else {
@@ -66,8 +91,9 @@ export default function StaffAuth() {
         setOpen(false);
         setNotice('Пароль изменён. Теперь войди с новым паролем.');
       } else {
-        const { error } = await db.auth.signInWithPassword({ email: email.trim(), password });
+        const { data, error } = await db.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
+        await ensureProfile(db, data.user);
         setOpen(false);
       }
     } catch (error) {

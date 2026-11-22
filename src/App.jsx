@@ -14,6 +14,13 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cart, setCart] = useState([]);
   const [sellerModalOpen, setSellerModalOpen] = useState(false);
+  const [communityPosts, setCommunityPosts] = useState([]);
+  const [postDraft, setPostDraft] = useState('');
+  const [postNotice, setPostNotice] = useState('');
+  const [postBusy, setPostBusy] = useState(false);
+  const [application, setApplication] = useState({ storeName: '', category: 'Streetwear & Apparel', bio: '' });
+  const [applicationNotice, setApplicationNotice] = useState('');
+  const [applicationBusy, setApplicationBusy] = useState(false);
   
   const [stores, setStores] = useState([
     { id: 1, name: 'UNDERGROUND LAB', category: 'Streetwear', rating: 4.9, items: 142, verified: true, city: 'Berlin', image: 'https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&w=600&q=80', bio: 'Exclusive underground cyberpunk & heavy streetwear.' },
@@ -45,8 +52,11 @@ export default function App() {
         const { data: productsData } = await supabase.from('products').select('*');
         if (productsData && productsData.length > 0) setProducts(productsData);
 
-        const { data: topicsData } = await supabase.from('forum_topics').select('*');
+        const { data: topicsData } = await supabase.from('forum_topics').select('*').order('created_at', { ascending: false });
         if (topicsData && topicsData.length > 0) setForumTopics(topicsData);
+
+        const { data: postsData, error: postsError } = await supabase.from('community_posts').select('*').order('created_at', { ascending: false }).limit(30);
+        if (!postsError && postsData) setCommunityPosts(postsData);
       } catch (e) {
         console.log('Using local fallback state');
       }
@@ -57,6 +67,62 @@ export default function App() {
   const addToCart = (product) => {
     setCart([...cart, product]);
   };
+
+  async function publishCommunityPost() {
+    const content = postDraft.trim();
+    if (!content) { setPostNotice('Сначала напиши публикацию.'); return; }
+    if (!supabase) { setPostNotice('Подключение STAFF к базе пока недоступно.'); return; }
+    setPostBusy(true);
+    setPostNotice('');
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) {
+        setPostNotice('Для публикации войди в аккаунт STAFF.');
+        window.dispatchEvent(new Event('staff:open-auth'));
+        return;
+      }
+      const author = user.user_metadata?.username || user.email?.split('@')[0] || 'STAFF member';
+      const { data, error } = await supabase.from('community_posts').insert({ author_id: user.id, author, content }).select('*').single();
+      if (error) throw error;
+      setCommunityPosts(current => [data, ...current]);
+      setPostDraft('');
+      setPostNotice('Публикация добавлена.');
+    } catch (error) {
+      setPostNotice(error.message || 'Не удалось опубликовать запись.');
+    } finally {
+      setPostBusy(false);
+    }
+  }
+
+  async function submitSellerApplication(event) {
+    event.preventDefault();
+    if (!supabase) { setApplicationNotice('Подключение STAFF к базе пока недоступно.'); return; }
+    setApplicationBusy(true);
+    setApplicationNotice('');
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) {
+        setApplicationNotice('Для отправки заявки войди в аккаунт STAFF.');
+        window.dispatchEvent(new Event('staff:open-auth'));
+        return;
+      }
+      const { error } = await supabase.from('seller_applications').insert({
+        user_id: user.id,
+        store_name: application.storeName.trim(),
+        category: application.category,
+        bio: application.bio.trim() || null
+      });
+      if (error) throw error;
+      setApplicationNotice('Заявка отправлена и ожидает проверки администрацией.');
+      setApplication({ storeName: '', category: 'Streetwear & Apparel', bio: '' });
+    } catch (error) {
+      setApplicationNotice(error.message || 'Не удалось отправить заявку.');
+    } finally {
+      setApplicationBusy(false);
+    }
+  }
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
 
@@ -297,13 +363,25 @@ export default function App() {
             <h1 className="text-4xl font-black text-white uppercase mb-2">STAFF Social Feed</h1>
             <p className="text-gray-400 mb-8">Share urban updates, style drops, and connect with members.</p>
             <div className="bg-[#121118] border border-purple-900/30 rounded-2xl p-6 mb-8">
-              <textarea placeholder="Share your style, music, or urban culture update..." className="w-full bg-black/50 border border-purple-900/40 rounded-xl p-4 text-white resize-none focus:outline-none focus:border-purple-500" rows={3}></textarea>
-              <div className="flex justify-between items-center mt-4">
-                <span className="text-xs text-gray-500">Connected with Supabase Realtime</span>
-                <button className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition flex items-center gap-2">
-                  <Send className="w-4 h-4" /> Post
+              <textarea value={postDraft} onChange={event => setPostDraft(event.target.value)} placeholder="Share your style, music, or urban culture update..." className="w-full bg-black/50 border border-purple-900/40 rounded-xl p-4 text-white resize-none focus:outline-none focus:border-purple-500" rows={3} maxLength={5000}></textarea>
+              <div className="flex justify-between items-center mt-4 gap-4">
+                <span className="text-xs text-gray-500" role="status">{postNotice || 'Публикации сохраняются в STAFF Community.'}</span>
+                <button onClick={publishCommunityPost} disabled={postBusy} className="shrink-0 px-6 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold rounded-xl transition flex items-center gap-2">
+                  <Send className="w-4 h-4" /> {postBusy ? 'Posting…' : 'Post'}
                 </button>
               </div>
+            </div>
+            <div className="space-y-4">
+              {communityPosts.map(post => (
+                <article key={post.id} className="rounded-2xl border border-purple-900/30 bg-[#121118] p-5">
+                  <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
+                    <span className="font-bold text-purple-300">@{post.author}</span>
+                    <time dateTime={post.created_at}>{new Date(post.created_at).toLocaleString()}</time>
+                  </div>
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-gray-200">{post.content}</p>
+                </article>
+              ))}
+              {communityPosts.length === 0 && <p className="text-sm text-gray-500">Пока нет публикаций. Стань первым участником обсуждения.</p>}
             </div>
           </div>
         )}
@@ -368,14 +446,14 @@ export default function App() {
             <button onClick={() => setSellerModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
             <h2 className="text-2xl font-black text-white uppercase mb-2">Apply for Seller Account</h2>
             <p className="text-xs text-gray-400 mb-6">Open an independent store on STAFF platform.</p>
-            <div className="space-y-4">
+            <form onSubmit={submitSellerApplication} className="space-y-4">
               <div>
                 <label className="text-xs text-gray-400 font-semibold block mb-1">Store Name</label>
-                <input type="text" placeholder="e.g. CYBER STREETWEAR" className="w-full bg-black/50 border border-purple-900/40 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500" />
+                <input required minLength={2} maxLength={100} value={application.storeName} onChange={event => setApplication(current => ({ ...current, storeName: event.target.value }))} type="text" placeholder="e.g. CYBER STREETWEAR" className="w-full bg-black/50 border border-purple-900/40 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500" />
               </div>
               <div>
                 <label className="text-xs text-gray-400 font-semibold block mb-1">Category</label>
-                <select className="w-full bg-black/50 border border-purple-900/40 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500">
+                <select value={application.category} onChange={event => setApplication(current => ({ ...current, category: event.target.value }))} className="w-full bg-black/50 border border-purple-900/40 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500">
                   <option>Streetwear & Apparel</option>
                   <option>Vintage & Archive</option>
                   <option>Gadgets & Audio</option>
@@ -384,12 +462,13 @@ export default function App() {
               </div>
               <div>
                 <label className="text-xs text-gray-400 font-semibold block mb-1">Store Bio & Details</label>
-                <textarea rows={3} placeholder="Describe your products..." className="w-full bg-black/50 border border-purple-900/40 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"></textarea>
+                <textarea value={application.bio} onChange={event => setApplication(current => ({ ...current, bio: event.target.value }))} rows={3} maxLength={2000} placeholder="Describe your products..." className="w-full bg-black/50 border border-purple-900/40 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"></textarea>
               </div>
-              <button onClick={() => setSellerModalOpen(false)} className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition">
-                Submit Store Application
+              {applicationNotice && <p role="status" className="text-xs leading-5 text-[#d0c99a]">{applicationNotice}</p>}
+              <button disabled={applicationBusy} className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold rounded-xl transition">
+                {applicationBusy ? 'Submitting…' : 'Submit Store Application'}
               </button>
-            </div>
+            </form>
           </div>
         </div>
       )}

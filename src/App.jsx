@@ -6,12 +6,12 @@ import {
   Plus, LogIn, Lock, Mail, Star, Sparkles, Filter, Check, Send
 } from 'lucide-react';
 import { supabase } from './lib/supabaseClient';
+import StaffAuth from './components/StaffAuth';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cart, setCart] = useState([]);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [sellerModalOpen, setSellerModalOpen] = useState(false);
   
   const [stores, setStores] = useState([
@@ -36,6 +36,7 @@ export default function App() {
 
   useEffect(() => {
     async function loadSupabaseData() {
+      if (!supabase) return;
       try {
         const { data: storesData } = await supabase.from('stores').select('*');
         if (storesData && storesData.length > 0) setStores(storesData);
@@ -119,9 +120,7 @@ export default function App() {
               )}
             </button>
 
-            <button onClick={() => setAuthModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-600 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(147,51,234,0.4)] transition">
-              <UserIcon className="w-4 h-4" /> Login
-            </button>
+            <StaffAuth />
 
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden p-2 text-gray-400 hover:text-white bg-white/5 rounded-lg">
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -367,26 +366,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      {authModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#121118] border border-purple-500/40 rounded-2xl p-6 max-w-md w-full relative">
-            <button onClick={() => setAuthModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
-            <h2 className="text-2xl font-black text-white uppercase mb-4">Account Login</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs text-gray-400 font-semibold block mb-1">Email</label>
-                <input type="email" placeholder="user@staff-platform.com" className="w-full bg-black/50 border border-purple-900/40 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-400 font-semibold block mb-1">Password</label>
-                <input type="password" placeholder="••••••••" className="w-full bg-black/50 border border-purple-900/40 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500" />
-              </div>
-              <button className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition">Sign In</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {sellerModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
